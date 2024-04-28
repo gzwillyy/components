@@ -43,7 +43,7 @@ func GetIntID() uint64 {
 func GetInstanceID(uid uint64, prefix string) string {
 	hd := hashids.NewData()
 	hd.Alphabet = Alphabet36
-	hd.MinLength = 6
+	hd.MinLength = 10
 	hd.Salt = "x20k5x"
 
 	h := hashids.NewWithData(hd)
