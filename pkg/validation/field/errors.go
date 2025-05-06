@@ -1,3 +1,4 @@
+// Package field 定义字段级验证错误类型及相关工具，用于结构化错误报告.
 package field
 
 import (
@@ -11,33 +12,32 @@ import (
 	"github.com/gzwillyy/components/pkg/util/sets"
 )
 
-// Error is an implementation of the 'error' interface, which represents a
-// field-level validation error.
+// Error 实现 error 接口，表示字段级验证错误信息.
 type Error struct {
-	Type     ErrorType
-	Field    string
-	BadValue interface{}
-	Detail   string
+	Type     ErrorType   // 错误类型标识（如 Required, Invalid）
+	Field    string      // 字段路径（如 "spec.template.metadata.name"）
+	BadValue interface{} // 引发错误的字段值
+	Detail   string      // 错误详情描述
 }
 
 var _ error = &Error{}
 
-// Error implements the error interface.
+// Error 实现 error 接口，返回完整错误描述（包含字段路径）.
 func (v *Error) Error() string {
 	return fmt.Sprintf("%s: %s", v.Field, v.ErrorBody())
 }
 
-// ErrorBody returns the error message without the field name.  This is useful
-// for building nice-looking higher-level error reporting.
+// ErrorBody 返回不含字段名的纯错误描述，用于构建高层错误信息.
 func (v *Error) ErrorBody() string {
 	var s string
 	switch v.Type {
 	//nolint: exhaustive
-	case ErrorTypeRequired, ErrorTypeForbidden, ErrorTypeTooLong, ErrorTypeInternal:
+	case ErrorTypeRequired, ErrorTypeForbidden, ErrorTypeTooLong, ErrorTypeInternal: // 基础错误类型直接返回类型描述
 		s = v.Type.String()
-	default:
+	default: // 其他类型需要拼接值和类型信息
 		value := v.BadValue
 		valueType := reflect.TypeOf(value)
+		// 处理空值和指针类型
 		if value == nil || valueType == nil {
 			value = "null"
 		} else if valueType.Kind() == reflect.Ptr {
@@ -47,6 +47,7 @@ func (v *Error) ErrorBody() string {
 				value = reflectValue.Elem().Interface()
 			}
 		}
+		// 根据值类型生成不同格式的描述
 		switch t := value.(type) {
 		case int64, int32, float64, float32, bool:
 			// use simple printer for simple types
@@ -70,9 +71,7 @@ func (v *Error) ErrorBody() string {
 	return s
 }
 
-// ErrorType is a machine readable value providing more detail about why
-// a field is invalid.  These values are expected to match 1-1 with
-// CauseType in api/types.go.
+// ErrorType 是机器可读的值，用于详细说明字段无效的原因。这些值应与 api/types.go 中的 CauseType 一一匹配
 type ErrorType string
 
 // TODO: These values are duplicated in api/types.go, but there's a circular dep.  Fix it.
